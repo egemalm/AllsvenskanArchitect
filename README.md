@@ -1,20 +1,122 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Fantasy Allsvenskan Architect 🏗️
 
-# Run and deploy your AI Studio app
+![Version](https://img.shields.io/badge/version-3.0.0-green)
+![Tech](https://img.shields.io/badge/react-19-blue)
+![Style](https://img.shields.io/badge/tailwind-3.4-purple)
+![License](https://img.shields.io/badge/license-MIT-gray)
 
-This contains everything you need to run your app locally.
+**Fantasy Allsvenskan Architect** is a high-performance, mobile-first companion app for the Swedish Fantasy Football league. Unlike standard fantasy apps, the Architect focuses on **atomic squad optimization**, **real-time data resilience**, and **rank-threat analytics**.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1wYvVtn9Vpbo6MAYczxhUZXsW8tO5s2dU
+It is built to run as a Progressive Web App (PWA) or wrapped in a native container, providing a "Cyber/Dark Mode" aesthetic optimized for OLED screens.
 
-## Run Locally
+---
 
-**Prerequisites:**  Node.js
+## ⚡ Key Features
 
+### 1. Visual Squad Builder
+*   **Interactive Pitch View**: A fully interactive 11-player pitch with a 4-player bench.
+*   **Dynamic Validation**: Real-time enforcement of formation rules (1 GK, 3-5 DEF, 2-5 MID, 1-3 FWD) and squad limits (max 3 players per team).
+*   **Budget Management**: Live bank calculation with granular budget editing capabilities.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### 2. The "Scout" AI Engine 🧠
+The core differentiator of the Architect is its client-side optimization engine found in the `AI Scout` tab. It operates in two modes:
+
+*   **Incremental Optimization (The Curve)**:
+    *   Uses a **Recursive Combinatorial Search** to analyze transfer depths from 1 to 5.
+    *   Calculates the "Marginal EP Gain" (Expected Points) for every additional transfer to determine if the point hit is worth the potential return.
+    *   **Pruning**: Implements intelligent pruning (only analyzing the bottom 5 performers for deep searches) to keep the UI responsive on mobile devices.
+    
+*   **Wildcard Mode**:
+    *   Uses a **Greedy Algorithm** to build the highest EP squad from scratch.
+    *   Automatically performs budget balancing by iteratively swapping the lowest value-per-cost asset until the squad fits within the financial cap.
+
+### 3. Data Resilience (The Proxy Swarm) 🐝
+To ensure the app works even when the official API has strict CORS policies or minor outages, the data layer implements a **Proxy Swarm**:
+*   The app races multiple proxy services (`allorigins`, `corsproxy`, `codetabs`, etc.) simultaneously.
+*   It implements a "Fail-Fast" mechanism with a 4.5s timeout.
+*   **Atomic Pruning**: Raw API data is stripped of unused fields immediately upon receipt to minimize memory footprint.
+*   **Offline Caching**: If all networks fail, the app gracefully degrades to the last known state stored in `localStorage`.
+
+### 4. Advanced Analytics
+*   **Influence**: Identifies your "Differentials" (High EP players in your squad with low overall ownership).
+*   **Rank Threats**: Identifies "Dangerous" players (High EP players *not* in your squad with high ownership).
+*   **Stats Hub**: A live league table and color-coded Fixture Difficulty Rating (FDR) view.
+
+---
+
+## 🛠️ Tech Stack
+
+*   **Core**: React 19 (Hooks, Context, Memoization)
+*   **Language**: TypeScript (Strict typing for API interfaces)
+*   **Styling**: Tailwind CSS (Utility-first, responsive design)
+*   **Icons**: Lucide React
+*   **State**: Local State + LocalStorage Persistence (No Redux/Zustand required due to atomic architecture)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+*   Node.js v18+
+*   npm or yarn
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/yourusername/fantasy-allsvenskan-architect.git
+    ```
+
+2.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+3.  Run the development server:
+    ```bash
+    npm start
+    ```
+
+---
+
+## 📂 Project Structure
+
+```
+/
+├── components/          # UI Components
+│   ├── PlayerSlot.tsx   # Individual pitch/bench player card
+│   ├── StatsHub.tsx     # League tables and fixture lists
+│   ├── TransferModal.tsx# Search and selection interface
+│   └── ...
+├── services/
+│   └── api.ts           # The Proxy Swarm and Data Fetching logic
+├── types.ts             # TypeScript interfaces for API responses
+├── constants.ts         # Configuration (Formation rules, defaults)
+├── App.tsx              # Main Controller & State Machine
+└── index.tsx            # Entry point
+```
+
+---
+
+## 🧠 Algorithmic Detail
+
+### The Optimization Loop
+The `runScout` function in `App.tsx` performs the following logic:
+
+1.  **Identify Weaknesses**: Sorts current squad by `ep_next` (Expected Points).
+2.  **Generate Combinations**: Creates sets of players to remove (Size $k=1$ to $5$).
+3.  **Knapsack-style Fill**: For every removed set, it attempts to fill the empty slots with the highest EP players available in the market that:
+    *   Fit the budget.
+    *   Fit the formation rules.
+    *   Do not violate team constraints.
+4.  **Result**: Returns a "Transfer Pack" suggesting the exact moves to make.
+
+---
+
+## ⚠️ Disclaimer
+
+This project is a third-party tool and is not affiliated with, endorsed by, or connected to Allsvenskan or the official Fantasy Allsvenskan game. Data is retrieved from public endpoints for personal analysis.
+
+---
+
+Developed with 💚 for the love of the game.
