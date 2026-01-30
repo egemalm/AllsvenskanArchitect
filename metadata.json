@@ -1,0 +1,5 @@
+{
+  "name": "Fantasy Allsvenskan Mobile Architect",
+  "description": "A high-performance squad builder for Fantasy Allsvenskan featuring real-time data, EP-optimization suggestions, and atomic transfer logic.",
+  "requestFramePermissions": []
+}
