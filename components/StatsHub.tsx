@@ -1,20 +1,14 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Team, Fixture } from '../types';
 import { Table, CalendarDays, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FDR_COLORS } from '../constants';
 
 interface StatsHubProps {
   teams: Team[];
   fixtures: Fixture[];
   loading: boolean;
 }
-
-const FDR_COLORS: Record<number, string> = {
-  1: 'bg-[#01fc7a] text-slate-900',
-  2: 'bg-[#01fc7a] text-slate-900',
-  3: 'bg-[#e7e7e7] text-slate-900',
-  4: 'bg-[#ff1751] text-white',
-  5: 'bg-[#80072d] text-white',
-};
 
 const StatsHub: React.FC<StatsHubProps> = ({ teams, fixtures, loading }) => {
   const [view, setView] = useState<'table' | 'fixtures'>('table');

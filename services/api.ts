@@ -1,9 +1,10 @@
 
-import { BootstrapData, Player, Team, Fixture } from '../types';
+import { BootstrapData, Player, Team, Fixture, NewsItem } from '../types';
 
 const API_BASE = 'https://fantasy.allsvenskan.se/api';
 const BOOTSTRAP_URL = `${API_BASE}/bootstrap-static/`;
 const FIXTURES_URL = `${API_BASE}/fixtures/`;
+const RSS_URL = 'https://api.rss2json.com/v1/api.json?rss_url=https://www.svenskafans.com/rss/site/2';
 const CACHE_KEY = 'allsvenskan_architect_data_v3';
 
 // Expanded Proxy Pool for better reliability
@@ -75,6 +76,30 @@ export async function fetchFixtures(): Promise<Fixture[]> {
     return [];
   } catch (e) {
     console.warn("Architect: Failed to fetch fixtures", e);
+    return [];
+  }
+}
+
+export async function fetchNews(): Promise<NewsItem[]> {
+  try {
+    // Direct fetch usually works for rss2json as it supports CORS
+    const response = await fetch(RSS_URL);
+    if (!response.ok) throw new Error("RSS Failed");
+    const json = await response.json();
+    
+    if (json.status === 'ok' && Array.isArray(json.items)) {
+      return json.items.map((item: any) => ({
+        title: item.title,
+        link: item.link,
+        pubDate: item.pubDate,
+        contentSnippet: item.description?.replace(/<[^>]*>?/gm, '').slice(0, 120) + '...' || '',
+        source: 'SvenskaFans',
+        guid: item.guid
+      })).slice(0, 15);
+    }
+    return [];
+  } catch (e) {
+    console.warn("Architect: Failed to fetch news", e);
     return [];
   }
 }

@@ -7,9 +7,10 @@ import {
   BootstrapData, 
   SquadSlot,
   SquadState,
-  Fixture
+  Fixture,
+  NewsItem
 } from './types';
-import { fetchBootstrapData, fetchFixtures } from './services/api';
+import { fetchBootstrapData, fetchFixtures, fetchNews } from './services/api';
 import { 
   INITIAL_BANK, 
   INITIAL_SQUAD_STRUCTURE, 
@@ -55,8 +56,9 @@ import PlayerSlot from './components/PlayerSlot';
 import TransferModal from './components/TransferModal';
 import PlayerInfoModal from './components/PlayerInfoModal';
 import StatsHub from './components/StatsHub';
+import NewsHub from './components/NewsHub';
 
-type Tab = 'squad' | 'ai-transfers' | 'stats' | 'analytics' | 'about';
+type Tab = 'squad' | 'ai-transfers' | 'stats' | 'analytics' | 'news';
 type ScoutMode = number | 'wildcard'; // 1-5 or 'wildcard'
 
 interface TransferPack {
@@ -81,8 +83,10 @@ function getCombinations<T>(arr: T[], k: number): T[][] {
 const App: React.FC = () => {
   const [data, setData] = useState<BootstrapData | null>(null);
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [isLive, setIsLive] = useState(false);
   const [isCached, setIsCached] = useState(false);
   const [bootStep, setBootStep] = useState(0);
@@ -95,6 +99,15 @@ const App: React.FC = () => {
     const saved = localStorage.getItem('architect_bank');
     return saved ? parseInt(saved) : INITIAL_BANK;
   });
+  const [captainId, setCaptainId] = useState<number | null>(() => {
+    const saved = localStorage.getItem('architect_captain');
+    return saved ? parseInt(saved) : null;
+  });
+  const [viceCaptainId, setViceCaptainId] = useState<number | null>(() => {
+    const saved = localStorage.getItem('architect_vice_captain');
+    return saved ? parseInt(saved) : null;
+  });
+
   const [activeTab, setActiveTab] = useState<Tab>('squad');
   
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -114,6 +127,13 @@ const App: React.FC = () => {
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
   const bankInputRef = useRef<HTMLInputElement>(null);
 
+  const loadNewsData = async () => {
+    setNewsLoading(true);
+    const newsItems = await fetchNews();
+    setNews(newsItems);
+    setNewsLoading(false);
+  };
+
   const loadData = useCallback(async (isInitial = false) => {
     setLoading(true);
     
@@ -122,9 +142,23 @@ const App: React.FC = () => {
       fetchBootstrapData(),
       fetchFixtures()
     ]);
+    
+    // Fetch news independently so it doesn't block critical path significantly
+    // But fire it now
+    if (isInitial) {
+       loadNewsData();
+    }
 
     setData(bootstrapResult.data);
-    setFixtures(fixturesResult);
+    
+    // Sort fixtures by time
+    const sortedFixtures = [...fixturesResult].sort((a, b) => {
+      const timeA = a.kickoff_time ? new Date(a.kickoff_time).getTime() : 0;
+      const timeB = b.kickoff_time ? new Date(b.kickoff_time).getTime() : 0;
+      return timeA - timeB;
+    });
+    setFixtures(sortedFixtures);
+
     setIsLive(bootstrapResult.isLive);
     setIsCached(!!bootstrapResult.isCached);
     setLoading(false);
@@ -145,13 +179,66 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('architect_squad', JSON.stringify(squad));
     localStorage.setItem('architect_bank', bank.toString());
-  }, [squad, bank]);
+    if (captainId) localStorage.setItem('architect_captain', captainId.toString());
+    else localStorage.removeItem('architect_captain');
+    if (viceCaptainId) localStorage.setItem('architect_vice_captain', viceCaptainId.toString());
+    else localStorage.removeItem('architect_vice_captain');
+  }, [squad, bank, captainId, viceCaptainId]);
+
+  // --- AUTOMATIC CAPTAINCY ENFORCEMENT ---
+  useEffect(() => {
+    // Collect all valid starters (players who are currently in starting XI)
+    // Sort them by EP (descending) to determine best candidates
+    const validStarters = squad
+      .filter(s => s.isStarter && s.player)
+      .map(s => s.player!)
+      .sort((a, b) => parseFloat(b.ep_next) - parseFloat(a.ep_next));
+
+    if (validStarters.length === 0) return;
+
+    let newCapId = captainId;
+    let newViceId = viceCaptainId;
+    let changed = false;
+
+    // 1. Ensure Captain exists and is currently a STARTER
+    // If current captain is null, or not in squad, or is now on the bench:
+    const isCapValid = newCapId && validStarters.some(p => p.id === newCapId);
+    if (!isCapValid) {
+      newCapId = validStarters[0].id; // Assign to highest EP starter
+      changed = true;
+    }
+
+    // 2. Ensure Vice Captain exists, is a starter, and is not the Captain
+    const validViceCandidates = validStarters.filter(p => p.id !== newCapId);
+    const isViceValid = newViceId && validViceCandidates.some(p => p.id === newViceId);
+    
+    if (!isViceValid) {
+       if (validViceCandidates.length > 0) {
+         newViceId = validViceCandidates[0].id; // Assign to next best
+         changed = true;
+       } else if (newViceId !== null) {
+         // If only 1 player in team, VC must be null
+         newViceId = null; 
+         changed = true;
+       }
+    }
+
+    if (changed) {
+      if (newCapId !== captainId) setCaptainId(newCapId);
+      if (newViceId !== viceCaptainId) setViceCaptainId(newViceId);
+    }
+  }, [squad, captainId, viceCaptainId]);
 
   const stats = useMemo(() => {
     const starters = squad.filter(s => s.isStarter);
+    
     const totalEP = starters
       .filter(s => s.player)
-      .reduce((sum, s) => sum + parseFloat(s.player!.ep_next), 0);
+      .reduce((sum, s) => {
+        let ep = parseFloat(s.player!.ep_next);
+        if (s.player!.id === captainId) ep *= 2;
+        return sum + ep;
+      }, 0);
     
     const teamCounts: Record<number, number> = {};
     const existingPlayerIds = new Set<number>();
@@ -166,7 +253,7 @@ const App: React.FC = () => {
     });
 
     return { totalEP, teamCounts, existingPlayerIds, posCounts };
-  }, [squad]);
+  }, [squad, captainId]);
 
   const analyticsData = useMemo(() => {
     if (!data) return { influence: [], threats: [] };
@@ -187,13 +274,11 @@ const App: React.FC = () => {
     .sort((a, b) => b.val - a.val)
     .slice(0, 5);
   
-    // Threats: High EP players NOT in squad (15), sorted by ownership.
-    // These are players that will hurt your rank most if they score.
+    // Threats: Top owned players NOT in squad (no EP sort, no status filter)
     const threats = data.elements
-      .filter(p => !allOwnedIds.has(p.id) && p.status === 'a')
-      .sort((a, b) => parseFloat(b.ep_next) - parseFloat(a.ep_next)) // 1. Get Top Performers
-      .slice(0, 5) // Take top 5 performers
-      .sort((a, b) => parseFloat(b.selected_by_percent) - parseFloat(a.selected_by_percent)) // 2. Sort by Ownership Threat
+      .filter(p => !allOwnedIds.has(p.id))
+      .sort((a, b) => parseFloat(b.selected_by_percent) - parseFloat(a.selected_by_percent)) // Strict ownership sort
+      .slice(0, 5)
       .map(p => ({
         player: p,
         val: parseFloat(p.selected_by_percent)
@@ -201,6 +286,26 @@ const App: React.FC = () => {
       
       return { influence, threats };
   }, [squad, data]);
+
+  const watchList = useMemo(() => {
+    const names = new Set<string>();
+    
+    // Add squad
+    squad.forEach(s => {
+      if (s.player) {
+        names.add(s.player.web_name);
+        names.add(s.player.second_name);
+      }
+    });
+    
+    // Add threats
+    analyticsData.threats.forEach(t => {
+      names.add(t.player.web_name);
+      names.add(t.player.second_name);
+    });
+    
+    return names;
+  }, [squad, analyticsData]);
 
   const validateFormation = useCallback((newSquad: SquadSlot[]): { valid: boolean; error?: string } => {
     const starters = newSquad.filter(s => s.isStarter);
@@ -215,45 +320,66 @@ const App: React.FC = () => {
   }, []);
 
   const optimizeSquad = useCallback(() => {
-    setSquad(currentSquad => {
-      let bestSquad = [...currentSquad];
-      let changed = true;
-      while (changed) {
-        changed = false;
-        let maxGain = 0;
-        let swapPair: [number, number] | null = null;
-        const starters = bestSquad.map((s, i) => ({ ...s, index: i })).filter(s => s.isStarter && s.player);
-        const bench = bestSquad.map((s, i) => ({ ...s, index: i })).filter(s => !s.isStarter && s.player);
-        for (const b of bench) {
-          for (const s of starters) {
-            const bEP = parseFloat(b.player!.ep_next);
-            const sEP = parseFloat(s.player!.ep_next);
-            const gain = bEP - sEP;
-            if (gain > 0.001) {
-              const testSquad = [...bestSquad];
-              testSquad[s.index] = { ...testSquad[s.index], isStarter: false };
-              testSquad[b.index] = { ...testSquad[b.index], isStarter: true };
-              if (validateFormation(testSquad).valid) {
-                if (gain > maxGain) {
-                  maxGain = gain;
-                  swapPair = [s.index, b.index];
-                }
+    // 1. Optimize Formation (Starters vs Bench)
+    let bestSquad = [...squad];
+    let changed = true;
+    
+    while (changed) {
+      changed = false;
+      let maxGain = 0;
+      let swapPair: [number, number] | null = null;
+      
+      const starters = bestSquad.map((s, i) => ({ ...s, index: i })).filter(s => s.isStarter && s.player);
+      const bench = bestSquad.map((s, i) => ({ ...s, index: i })).filter(s => !s.isStarter && s.player);
+      
+      for (const b of bench) {
+        for (const s of starters) {
+          const bEP = parseFloat(b.player!.ep_next);
+          const sEP = parseFloat(s.player!.ep_next);
+          const gain = bEP - sEP;
+          
+          if (gain > 0.001) {
+            const testSquad = [...bestSquad];
+            testSquad[s.index] = { ...testSquad[s.index], isStarter: false };
+            testSquad[b.index] = { ...testSquad[b.index], isStarter: true };
+            
+            if (validateFormation(testSquad).valid) {
+              if (gain > maxGain) {
+                maxGain = gain;
+                swapPair = [s.index, b.index];
               }
             }
           }
         }
-        if (swapPair) {
-          const [sIdx, bIdx] = swapPair;
-          const newSquad = [...bestSquad];
-          newSquad[sIdx] = { ...newSquad[sIdx], isStarter: false };
-          newSquad[bIdx] = { ...newSquad[bIdx], isStarter: true };
-          bestSquad = newSquad;
-          changed = true;
-        }
       }
-      return bestSquad;
-    });
-  }, [validateFormation]);
+      
+      if (swapPair) {
+        const [sIdx, bIdx] = swapPair;
+        const newSquad = [...bestSquad];
+        newSquad[sIdx] = { ...newSquad[sIdx], isStarter: false };
+        newSquad[bIdx] = { ...newSquad[bIdx], isStarter: true };
+        bestSquad = newSquad;
+        changed = true;
+      }
+    }
+
+    // 2. Optimize Captaincy (Best EP)
+    const activeStarters = bestSquad
+      .filter(s => s.isStarter && s.player)
+      .map(s => s.player!)
+      .sort((a, b) => parseFloat(b.ep_next) - parseFloat(a.ep_next));
+
+    if (activeStarters.length > 0) {
+      setCaptainId(activeStarters[0].id);
+      if (activeStarters.length > 1) {
+        setViceCaptainId(activeStarters[1].id);
+      } else {
+        setViceCaptainId(null);
+      }
+    }
+
+    setSquad(bestSquad);
+  }, [squad, validateFormation]);
 
   const handleSave = () => {
     setSaveStatus('saving');
@@ -307,6 +433,7 @@ const App: React.FC = () => {
       const idx = newSquad.findIndex(s => s.id === slotId);
       if (idx === -1) return prev;
       const oldPlayer = newSquad[idx].player;
+      
       const costDiff = newPlayer.now_cost - (oldPlayer?.now_cost || 0);
       setBank(b => b - costDiff);
       newSquad[idx] = { ...newSquad[idx], player: newPlayer };
@@ -328,8 +455,10 @@ const App: React.FC = () => {
   }, []);
 
   const executeTransferPack = useCallback((pack: TransferPack) => {
+    // Note: We intentionally DO NOT reset captaincy here. 
+    // The useEffect will handle re-validating the captains based on the new squad state.
+    
     if (pack.isWildcard) {
-      // Wildcard replace all
       setSquad(prev => {
         const newSquad = [...prev]; 
         const pool = [...pack.in];
@@ -590,6 +719,12 @@ const App: React.FC = () => {
   const viewingPlayer = data?.elements.find(p => p.id === viewingPlayerId) || null;
   const viewingSlotId = squad.find(s => s.player?.id === viewingPlayerId)?.id || null;
   const activeResult = scoutResults[viewResultIndex];
+  
+  // Dynamic ownership check for the viewing player
+  const isViewingPlayerOwned = useMemo(() => {
+    if (!viewingPlayerId) return false;
+    return squad.some(s => s.player?.id === viewingPlayerId);
+  }, [squad, viewingPlayerId]);
 
   if (booting) {
     return (
@@ -637,7 +772,7 @@ const App: React.FC = () => {
         <div className="flex gap-2">
           <button onClick={() => setIsBankModalOpen(true)} className="flex-1 bg-white/5 rounded-xl px-3 py-2 border border-white/5 flex justify-between items-center hover:bg-white/10 active:scale-95 transition-all group">
             <span className="text-[8px] uppercase text-white/30 font-black tracking-widest flex items-center gap-1">Bank <Edit2 size={8} className="opacity-50 group-hover:opacity-100" /></span>
-            <span className="text-sm font-black text-white">{(bank / 10).toFixed(1)}M</span>
+            <span className={`text-sm font-black ${bank < 0 ? 'text-red-500' : 'text-white'}`}>{(bank / 10).toFixed(1)}M</span>
           </button>
           <div className="flex-1 bg-white/5 rounded-xl px-3 py-2 border border-white/5 flex justify-between items-center">
             <span className="text-[8px] uppercase text-white/30 font-black tracking-widest">EP</span>
@@ -653,16 +788,56 @@ const App: React.FC = () => {
               <div className="absolute inset-x-0 top-0 h-1/2 pitch-line opacity-5" />
               <div className="relative flex-1 flex flex-col justify-between py-1">
                 <div className="flex justify-around items-center px-4">{squad.filter(s => s.isStarter && s.type === ElementType.FWD).map(s => (
-                  <PlayerSlot key={s.id} player={s.player} type={s.type} onClick={() => handleSlotClick(s.id)} isSelected={selectedSlotId === s.id} label="FWD" teamName={getTeamShortName(s.player?.team)} />
+                  <PlayerSlot 
+                    key={s.id} 
+                    player={s.player} 
+                    type={s.type} 
+                    onClick={() => handleSlotClick(s.id)} 
+                    isSelected={selectedSlotId === s.id} 
+                    label="FWD" 
+                    teamName={getTeamShortName(s.player?.team)}
+                    isCaptain={s.player?.id === captainId}
+                    isViceCaptain={s.player?.id === viceCaptainId}
+                  />
                 ))}</div>
                 <div className="flex justify-around items-center px-1">{squad.filter(s => s.isStarter && s.type === ElementType.MID).map(s => (
-                  <PlayerSlot key={s.id} player={s.player} type={s.type} onClick={() => handleSlotClick(s.id)} isSelected={selectedSlotId === s.id} label="MID" teamName={getTeamShortName(s.player?.team)} />
+                  <PlayerSlot 
+                    key={s.id} 
+                    player={s.player} 
+                    type={s.type} 
+                    onClick={() => handleSlotClick(s.id)} 
+                    isSelected={selectedSlotId === s.id} 
+                    label="MID" 
+                    teamName={getTeamShortName(s.player?.team)}
+                    isCaptain={s.player?.id === captainId}
+                    isViceCaptain={s.player?.id === viceCaptainId}
+                  />
                 ))}</div>
                 <div className="flex justify-around items-center px-1">{squad.filter(s => s.isStarter && s.type === ElementType.DEF).map(s => (
-                  <PlayerSlot key={s.id} player={s.player} type={s.type} onClick={() => handleSlotClick(s.id)} isSelected={selectedSlotId === s.id} label="DEF" teamName={getTeamShortName(s.player?.team)} />
+                  <PlayerSlot 
+                    key={s.id} 
+                    player={s.player} 
+                    type={s.type} 
+                    onClick={() => handleSlotClick(s.id)} 
+                    isSelected={selectedSlotId === s.id} 
+                    label="DEF" 
+                    teamName={getTeamShortName(s.player?.team)}
+                    isCaptain={s.player?.id === captainId}
+                    isViceCaptain={s.player?.id === viceCaptainId}
+                  />
                 ))}</div>
                 <div className="flex justify-center">{squad.filter(s => s.isStarter && s.type === ElementType.GK).map(s => (
-                  <PlayerSlot key={s.id} player={s.player} type={s.type} onClick={() => handleSlotClick(s.id)} isSelected={selectedSlotId === s.id} label="GK" teamName={getTeamShortName(s.player?.team)} />
+                  <PlayerSlot 
+                    key={s.id} 
+                    player={s.player} 
+                    type={s.type} 
+                    onClick={() => handleSlotClick(s.id)} 
+                    isSelected={selectedSlotId === s.id} 
+                    label="GK" 
+                    teamName={getTeamShortName(s.player?.team)}
+                    isCaptain={s.player?.id === captainId}
+                    isViceCaptain={s.player?.id === viceCaptainId}
+                  />
                 ))}</div>
               </div>
             </div>
@@ -676,7 +851,18 @@ const App: React.FC = () => {
                   const order = { [ElementType.GK]: 1, [ElementType.DEF]: 2, [ElementType.MID]: 3, [ElementType.FWD]: 4 };
                   return order[a.type] - order[b.type];
                 }).map(s => (
-                  <PlayerSlot key={s.id} player={s.player} type={s.type} onClick={() => handleSlotClick(s.id)} isSelected={selectedSlotId === s.id} label={POSITION_LABELS[s.type]} isBench teamName={getTeamShortName(s.player?.team)} />
+                  <PlayerSlot 
+                    key={s.id} 
+                    player={s.player} 
+                    type={s.type} 
+                    onClick={() => handleSlotClick(s.id)} 
+                    isSelected={selectedSlotId === s.id} 
+                    label={POSITION_LABELS[s.type]} 
+                    isBench 
+                    teamName={getTeamShortName(s.player?.team)}
+                    isCaptain={s.player?.id === captainId}
+                    isViceCaptain={s.player?.id === viceCaptainId}
+                  />
                 ))}
               </div>
             </section>
@@ -879,7 +1065,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="bg-slate-950/30 rounded-2xl p-2 border border-white/5 space-y-1">
                       {analyticsData.influence.map((item, i) => (
-                        <div key={item.player.id} className="flex flex-col px-3 py-2 bg-white/5 rounded-xl">
+                        <div key={item.player.id} onClick={() => setViewingPlayerId(item.player.id)} className="flex flex-col px-3 py-2 bg-white/5 rounded-xl cursor-pointer hover:bg-white/10 transition-colors">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] font-black uppercase italic text-white">{item.player.web_name} <span className="text-white/20 text-[8px] ml-1 not-italic">{POSITION_LABELS[item.player.element_type]}</span></span>
                             <span className="text-[10px] font-bold text-green-400">{item.val.toFixed(1)}%</span>
@@ -901,7 +1087,7 @@ const App: React.FC = () => {
                     </div>
                     <div className="bg-slate-950/30 rounded-2xl p-2 border border-white/5 space-y-1">
                       {analyticsData.threats.map((item, i) => (
-                        <div key={item.player.id} className="flex flex-col px-3 py-2 bg-white/5 rounded-xl border-l-2 border-transparent hover:border-red-500/50 transition-colors">
+                        <div key={item.player.id} onClick={() => setViewingPlayerId(item.player.id)} className="flex flex-col px-3 py-2 bg-white/5 rounded-xl border-l-2 border-transparent hover:border-red-500/50 hover:bg-white/10 transition-colors cursor-pointer">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] font-black uppercase italic text-white">{item.player.web_name} <span className="text-white/20 text-[8px] ml-1 not-italic">{POSITION_LABELS[item.player.element_type]}</span></span>
                             <span className="text-[10px] font-bold text-red-400">{item.val.toFixed(1)}%</span>
@@ -918,84 +1104,14 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'about' && (
-          <div className="p-4 space-y-4 pb-36">
-             <div className="bg-slate-900/60 p-5 rounded-3xl border border-white/5 flex flex-col gap-4 animate-in slide-in-from-bottom duration-500">
-                <div className="flex items-center gap-4">
-                   <div className="bg-blue-500/10 p-3 rounded-xl border border-blue-500/20"><Info size={24} className="text-blue-400" /></div>
-                   <div><h2 className="text-sm font-black uppercase italic">User Guide</h2><p className="text-[8px] text-white/30 font-black uppercase tracking-[0.2em] mt-0.5">How to use the Architect</p></div>
-                </div>
-
-                <div className="space-y-3">
-                   {/* Step 1: Squad */}
-                   <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-3 opacity-10"><Layout size={40} /></div>
-                      <h3 className="text-[10px] font-black uppercase text-green-400 tracking-widest mb-2">1. Squad Management</h3>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <div className="mt-0.5 min-w-[4px] h-[4px] rounded-full bg-white/40" />
-                          <p className="text-xs text-white/70 font-medium leading-tight">
-                            <span className="text-white font-bold">Tap a player</span> to view detailed stats, make a substitution, or transfer them out.
-                          </p>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="mt-0.5 min-w-[4px] h-[4px] rounded-full bg-white/40" />
-                          <p className="text-xs text-white/70 font-medium leading-tight">
-                            <span className="text-white font-bold">Tap 'Optimize'</span> to automatically select your strongest starting XI based on EP (Expected Points).
-                          </p>
-                        </li>
-                      </ul>
-                   </div>
-
-                   {/* Step 2: Scout */}
-                   <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-3 opacity-10"><BrainCircuit size={40} /></div>
-                      <h3 className="text-[10px] font-black uppercase text-purple-400 tracking-widest mb-2">2. The AI Scout</h3>
-                      <ul className="space-y-2">
-                        <li className="flex items-start gap-2">
-                          <div className="mt-0.5 min-w-[4px] h-[4px] rounded-full bg-white/40" />
-                          <p className="text-xs text-white/70 font-medium leading-tight">
-                            Select a <span className="text-white font-bold">Search Depth (1-5)</span>. The engine will calculate the best possible transfer combinations to maximize points.
-                          </p>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <div className="mt-0.5 min-w-[4px] h-[4px] rounded-full bg-white/40" />
-                          <p className="text-xs text-white/70 font-medium leading-tight">
-                            Use the <span className="text-white font-bold">Value Curve</span> to see if making extra transfers is worth the cost.
-                          </p>
-                        </li>
-                         <li className="flex items-start gap-2">
-                          <div className="mt-0.5 min-w-[4px] h-[4px] rounded-full bg-white/40" />
-                          <p className="text-xs text-white/70 font-medium leading-tight">
-                            <span className="text-yellow-500 font-bold">WC (Wildcard)</span> mode rebuilds your entire squad from scratch within your budget.
-                          </p>
-                        </li>
-                      </ul>
-                   </div>
-
-                   {/* Step 3: Bank & Rules */}
-                   <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-slate-950/50 p-3 rounded-2xl border border-white/5">
-                         <div className="flex items-center gap-2 mb-2">
-                            <Edit2 size={12} className="text-blue-400" />
-                            <span className="text-[9px] font-black uppercase text-white/40">Budget</span>
-                         </div>
-                         <p className="text-[10px] text-white/60 leading-tight">
-                            Tap the <span className="text-white font-bold">Bank</span> display in the header to manually adjust your available funds.
-                         </p>
-                      </div>
-                       <div className="bg-slate-950/50 p-3 rounded-2xl border border-white/5">
-                         <div className="flex items-center gap-2 mb-2">
-                            <ShieldCheck size={12} className="text-red-400" />
-                            <span className="text-[9px] font-black uppercase text-white/40">Rules</span>
-                         </div>
-                         <p className="text-[10px] text-white/60 leading-tight">
-                            Valid formations require 1 GK, 3-5 DEF, 2-5 MID, 1-3 FWD. Max 3 players per club.
-                         </p>
-                      </div>
-                   </div>
-                </div>
-             </div>
+        {activeTab === 'news' && (
+          <div className="h-full">
+            <NewsHub 
+              news={news} 
+              loading={newsLoading} 
+              onRefresh={loadNewsData}
+              watchList={watchList}
+            />
           </div>
         )}
       </main>
@@ -1020,9 +1136,9 @@ const App: React.FC = () => {
           <Table2 size={24} />
           <span className="text-[9px] font-black uppercase tracking-widest">Table</span>
         </button>
-        <button onClick={() => setActiveTab('about')} className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'about' ? 'text-blue-400' : 'text-white/60 hover:text-white'}`}>
-          <Info size={24} />
-          <span className="text-[9px] font-black uppercase tracking-widest">Guide</span>
+        <button onClick={() => setActiveTab('news')} className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'news' ? 'text-blue-400' : 'text-white/60 hover:text-white'}`}>
+          <Globe size={24} />
+          <span className="text-[9px] font-black uppercase tracking-widest">News</span>
         </button>
       </footer>
 
@@ -1031,14 +1147,31 @@ const App: React.FC = () => {
           player={viewingPlayer}
           team={data?.teams.find(t => t.id === viewingPlayer.team)}
           onClose={() => setViewingPlayerId(null)}
-          isOwned={true} // Pitch-clicked players are always owned
+          isOwned={isViewingPlayerOwned} 
+          showTransferIn={activeTab !== 'analytics'}
           onAction={(type) => {
             if (type === 'swap' && viewingSlotId) {
               setSelectedSlotId(viewingSlotId);
             } else if (type === 'transfer' && viewingSlotId) {
               removePlayer(viewingSlotId);
+            } else if (type === 'captain' && viewingPlayerId) {
+              setCaptainId(viewingPlayerId);
+              if (viceCaptainId === viewingPlayerId) setViceCaptainId(null);
+            } else if (type === 'vice' && viewingPlayerId) {
+              setViceCaptainId(viewingPlayerId);
+              if (captainId === viewingPlayerId) setCaptainId(null);
+            } else if (type === 'buy' && viewingPlayer) {
+              const emptySlot = squad.find(s => s.type === viewingPlayer.element_type && s.player === null);
+              if (emptySlot) {
+                 // Removed budget check here to allow overspending
+                 executeTransfer(emptySlot.id, viewingPlayer);
+                 setViewingPlayerId(null);
+              } else {
+                setErrorMsg(`No empty ${POSITION_LABELS[viewingPlayer.element_type]} slots. Sell a player first.`);
+                setTimeout(() => setErrorMsg(null), 2000);
+              }
             }
-            setViewingPlayerId(null);
+            if (type !== 'buy') setViewingPlayerId(null);
           }}
         />
       )}

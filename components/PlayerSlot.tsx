@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Player, ElementType } from '../types';
-import { User, Plus } from 'lucide-react';
+import { User, Plus, AlertCircle, ShieldBan } from 'lucide-react';
+import { POSITION_LABELS } from '../constants';
 
 interface PlayerSlotProps {
   player: Player | null;
@@ -11,6 +12,8 @@ interface PlayerSlotProps {
   label?: string;
   isBench?: boolean;
   teamName?: string;
+  isCaptain?: boolean;
+  isViceCaptain?: boolean;
 }
 
 const PlayerSlot: React.FC<PlayerSlotProps> = ({ 
@@ -20,18 +23,30 @@ const PlayerSlot: React.FC<PlayerSlotProps> = ({
   isSelected, 
   label, 
   isBench,
-  teamName 
+  teamName,
+  isCaptain,
+  isViceCaptain
 }) => {
+  const isUnavailable = player && player.status !== 'a';
+  const isDoubtful = player && player.status === 'd';
+
   return (
     <button
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      className={`flex flex-col items-center justify-center transition-all duration-300 ${
+      className={`relative flex flex-col items-center justify-center transition-all duration-300 ${
         isBench ? 'w-14' : 'w-16 sm:w-20'
       } ${isSelected ? 'scale-105' : 'active:scale-95'}`}
     >
+      {/* Bench Position Badge - Centered & Conditional on Player Existence */}
+      {isBench && player && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900 text-white text-[7px] font-black px-1.5 py-0.5 rounded border border-white/20 uppercase tracking-widest shadow-lg whitespace-nowrap">
+           {POSITION_LABELS[type]}
+        </div>
+      )}
+
       <div className={`relative rounded-full flex items-center justify-center transition-all duration-300 ${
         isBench ? 'w-8 h-8' : 'w-10 h-10 sm:w-12 sm:h-12'
       } ${
@@ -46,8 +61,33 @@ const PlayerSlot: React.FC<PlayerSlotProps> = ({
         )}
         
         {player && (
-          <div className="absolute -bottom-1 -right-1 bg-green-600 text-[6px] font-black px-0.5 rounded border border-white shadow-sm">
+          <div className="absolute -bottom-1 -right-1 bg-green-600 text-[6px] font-black px-0.5 rounded border border-white shadow-sm z-10">
             {(player.now_cost / 10).toFixed(1)}
+          </div>
+        )}
+
+        {/* Status / Injury Badge */}
+        {isUnavailable && (
+          <div className={`absolute -bottom-1 -left-1 w-4 h-4 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-lg z-20 ${
+            isDoubtful ? 'bg-orange-500 text-slate-900' : 'bg-red-600 text-white'
+          }`}>
+             {isDoubtful ? (
+               <span className="text-[8px] font-black">!</span>
+             ) : (
+               <ShieldBan size={8} />
+             )}
+          </div>
+        )}
+
+        {/* Captaincy Badge */}
+        {isCaptain && (
+          <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-yellow-500 text-slate-950 font-black text-[9px] flex items-center justify-center border-2 border-slate-900 shadow-lg z-20">
+            C
+          </div>
+        )}
+        {isViceCaptain && !isCaptain && (
+          <div className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-slate-200 text-slate-950 font-black text-[9px] flex items-center justify-center border-2 border-slate-900 shadow-lg z-20">
+            V
           </div>
         )}
       </div>
@@ -73,12 +113,6 @@ const PlayerSlot: React.FC<PlayerSlotProps> = ({
             {player ? player.web_name : label || 'Add'}
           </div>
         </div>
-        
-        {player && (
-          <div className="text-[7px] text-green-400/80 font-black mt-0.5 tracking-tighter uppercase text-center w-full">
-            {player.ep_next} EP
-          </div>
-        )}
       </div>
     </button>
   );

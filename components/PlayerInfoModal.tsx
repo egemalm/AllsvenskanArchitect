@@ -1,14 +1,15 @@
 
 import React from 'react';
 import { Player, Team } from '../types';
-import { X, TrendingUp, Zap, Shield, AlertCircle, Activity, ArrowRight, Trash2 } from 'lucide-react';
+import { X, TrendingUp, Zap, Shield, AlertCircle, Activity, ArrowRight, Trash2, Crown, Star } from 'lucide-react';
 
 interface PlayerInfoModalProps {
   player: Player | null;
   team: Team | undefined;
   onClose: () => void;
-  onAction?: (type: 'transfer' | 'swap' | 'buy') => void;
+  onAction?: (type: 'transfer' | 'swap' | 'buy' | 'captain' | 'vice') => void;
   isOwned?: boolean;
+  showTransferIn?: boolean;
 }
 
 const StatItem = ({ label, value, subValue, highlight = false }: { label: string, value: string | number, subValue?: string, highlight?: boolean }) => (
@@ -21,7 +22,7 @@ const StatItem = ({ label, value, subValue, highlight = false }: { label: string
   </div>
 );
 
-const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose, onAction, isOwned = true }) => {
+const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose, onAction, isOwned = true, showTransferIn = true }) => {
   if (!player) return null;
 
   const isInjured = player.status !== 'a';
@@ -132,38 +133,60 @@ const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose
         </div>
 
         {/* Action Buttons */}
-        <div className="p-6 bg-slate-900/80 backdrop-blur-xl border-t border-white/10 flex gap-3 shrink-0">
-          {isOwned ? (
-            <>
+        <div className="p-6 bg-slate-900/80 backdrop-blur-xl border-t border-white/10 shrink-0 flex flex-col gap-3">
+          {/* Captaincy Row */}
+          {isOwned && (
+            <div className="flex gap-2">
               <button 
-                onClick={() => onAction?.('swap')}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs border border-white/10 transition-all active:scale-95 flex items-center justify-center gap-2"
+                onClick={() => onAction?.('captain')}
+                className="flex-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500 py-3 rounded-xl font-black uppercase italic tracking-tighter text-[10px] border border-yellow-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                <Zap size={14} /> Substitute
+                <Crown size={14} /> Make Captain
               </button>
               <button 
-                onClick={() => onAction?.('transfer')}
-                className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs border border-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                onClick={() => onAction?.('vice')}
+                className="flex-1 bg-slate-700/30 hover:bg-slate-700/50 text-white/70 py-3 rounded-xl font-black uppercase italic tracking-tighter text-[10px] border border-white/10 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                <Trash2 size={14} /> Transfer Out
+                <Star size={14} /> Make Vice
               </button>
-            </>
-          ) : (
-            <>
-              <button 
-                onClick={onClose}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs border border-white/10 transition-all active:scale-95"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => onAction?.('buy')}
-                className="flex-[2] bg-green-500 hover:bg-green-400 text-slate-950 py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                <ArrowRight size={14} /> Transfer In
-              </button>
-            </>
+            </div>
           )}
+
+          <div className="flex gap-3">
+            {isOwned ? (
+              <>
+                <button 
+                  onClick={() => onAction?.('swap')}
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs border border-white/10 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Zap size={14} /> Substitute
+                </button>
+                <button 
+                  onClick={() => onAction?.('transfer')}
+                  className="flex-1 bg-red-600/10 hover:bg-red-600/20 text-red-500 py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs border border-red-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={14} /> Transfer Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={onClose}
+                  className="flex-1 bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs border border-white/10 transition-all active:scale-95"
+                >
+                  {showTransferIn ? 'Cancel' : 'Close'}
+                </button>
+                {showTransferIn && (
+                  <button 
+                    onClick={() => onAction?.('buy')}
+                    className="flex-[2] bg-green-500 hover:bg-green-400 text-slate-950 py-4 rounded-2xl font-black uppercase italic tracking-tighter text-xs shadow-[0_0_20px_rgba(34,197,94,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <ArrowRight size={14} /> Transfer In
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

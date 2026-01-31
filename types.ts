@@ -81,3 +81,12 @@ export interface SquadState {
   slots: SquadSlot[];
   bank: number;
 }
+
+export interface NewsItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  contentSnippet: string;
+  source: string;
+  guid: string;
+}

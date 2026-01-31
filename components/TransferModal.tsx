@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Player, Team, ElementType } from '../types';
-import { Search, X, TrendingUp, Info, AlertTriangle } from 'lucide-react';
+import { Search, X, TrendingUp, Info, AlertTriangle, Coins } from 'lucide-react';
 import PlayerInfoModal from './PlayerInfoModal';
 
 interface TransferModalProps {
@@ -32,15 +32,18 @@ const TransferModal: React.FC<TransferModalProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingPlayerId, setViewingPlayerId] = useState<number | null>(null);
 
+  const potentialBudget = (currentSlotPlayer?.now_cost || 0) + bank;
+  const isBudgetNegative = potentialBudget < 0;
+
   const suggestions = useMemo(() => {
     if (!isOpen) return [];
 
-    const maxBudget = (currentSlotPlayer?.now_cost || 0) + bank;
+    // Note: We deliberately removed the maxBudget filter to allow overspending
     
     return players
       .filter(p => {
         if (p.element_type !== slotType) return false;
-        if (p.now_cost > maxBudget) return false;
+        
         if (existingPlayerIds.has(p.id) && p.id !== currentSlotPlayer?.id) return false;
         
         const teamCount = squadTeamCounts[p.team] || 0;
@@ -53,7 +56,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
         return true;
       })
       .sort((a, b) => parseFloat(b.ep_next) - parseFloat(a.ep_next));
-  }, [players, bank, currentSlotPlayer, slotType, squadTeamCounts, existingPlayerIds, searchTerm, isOpen]);
+  }, [players, currentSlotPlayer, slotType, squadTeamCounts, existingPlayerIds, searchTerm, isOpen]);
 
   const viewingPlayer = players.find(p => p.id === viewingPlayerId) || null;
 
@@ -67,8 +70,11 @@ const TransferModal: React.FC<TransferModalProps> = ({
         <div className="p-6 border-b border-white/5 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-xl font-black uppercase italic tracking-tighter">Scout Report</h2>
-            <div className="flex gap-3 mt-1">
-              <span className="text-[10px] text-green-500 font-black uppercase tracking-tight">Budget: {((currentSlotPlayer?.now_cost || 0 + bank) / 10).toFixed(1)}m</span>
+            <div className="flex gap-3 mt-1 items-center">
+              <span className={`text-[10px] font-black uppercase tracking-tight flex items-center gap-1 ${isBudgetNegative ? 'text-red-500' : 'text-green-500'}`}>
+                {isBudgetNegative && <AlertTriangle size={10} />}
+                Budget: {(potentialBudget / 10).toFixed(1)}m
+              </span>
               <span className="text-[10px] text-white/40 font-black uppercase tracking-widest">{slotType === 1 ? 'GK' : slotType === 2 ? 'DEF' : slotType === 3 ? 'MID' : 'FWD'} Database</span>
             </div>
           </div>
@@ -98,12 +104,15 @@ const TransferModal: React.FC<TransferModalProps> = ({
               const currentEP = currentSlotPlayer ? parseFloat(currentSlotPlayer.ep_next) : 0;
               const newEP = parseFloat(p.ep_next);
               const epGain = newEP - currentEP;
+              
+              // Visual warning if over budget
+              const willBeOverBudget = p.now_cost > potentialBudget;
 
               return (
                 <div
                   key={p.id}
                   onClick={() => onSelect(p)}
-                  className="w-full bg-slate-800/30 hover:bg-slate-800/60 p-4 pl-5 rounded-[2rem] flex items-center justify-between transition-all border border-white/5 active:scale-[0.98] cursor-pointer group"
+                  className={`w-full p-4 pl-5 rounded-[2rem] flex items-center justify-between transition-all border active:scale-[0.98] cursor-pointer group ${willBeOverBudget ? 'bg-slate-800/20 hover:bg-slate-800/40 border-red-500/20' : 'bg-slate-800/30 hover:bg-slate-800/60 border-white/5'}`}
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center border border-white/10 group-hover:border-green-500/50 transition-colors">
@@ -113,7 +122,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
                       <div className="font-black text-white text-sm leading-tight uppercase italic">{p.web_name}</div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[8px] font-black bg-white/10 px-1.5 py-0.5 rounded text-white/50 uppercase">{team?.short_name}</span>
-                        <span className="text-[10px] text-green-400 font-black">{(p.now_cost / 10).toFixed(1)}m</span>
+                        <span className={`text-[10px] font-black ${willBeOverBudget ? 'text-red-400' : 'text-green-400'}`}>{(p.now_cost / 10).toFixed(1)}m</span>
                       </div>
                     </div>
                   </div>

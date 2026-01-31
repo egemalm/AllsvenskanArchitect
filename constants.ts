@@ -31,3 +31,11 @@ export const POSITION_LABELS: Record<ElementType, string> = {
   [ElementType.MID]: 'MID',
   [ElementType.FWD]: 'FWD',
 };
+
+export const FDR_COLORS: Record<number, string> = {
+  1: 'bg-[#01fc7a] text-slate-900',
+  2: 'bg-[#01fc7a] text-slate-900',
+  3: 'bg-[#e7e7e7] text-slate-900',
+  4: 'bg-[#ff1751] text-white',
+  5: 'bg-[#80072d] text-white',
+};
