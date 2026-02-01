@@ -771,11 +771,11 @@ const App: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button onClick={() => setIsBankModalOpen(true)} className="flex-1 bg-white/5 rounded-xl px-3 py-2 border border-white/5 flex justify-between items-center hover:bg-white/10 active:scale-95 transition-all group">
-            <span className="text-[8px] uppercase text-white/30 font-black tracking-widest flex items-center gap-1">Bank <Edit2 size={8} className="opacity-50 group-hover:opacity-100" /></span>
+            <span className="text-[8px] uppercase text-white/60 font-black tracking-widest flex items-center gap-1">Bank <Edit2 size={8} className="opacity-50 group-hover:opacity-100" /></span>
             <span className={`text-sm font-black ${bank < 0 ? 'text-red-500' : 'text-white'}`}>{(bank / 10).toFixed(1)}M</span>
           </button>
           <div className="flex-1 bg-white/5 rounded-xl px-3 py-2 border border-white/5 flex justify-between items-center">
-            <span className="text-[8px] uppercase text-white/30 font-black tracking-widest">EP</span>
+            <span className="text-[8px] uppercase text-white/60 font-black tracking-widest">Excpected Points</span>
             <span className="text-sm font-black text-green-400">{stats.totalEP.toFixed(1)}</span>
           </div>
         </div>
@@ -844,7 +844,7 @@ const App: React.FC = () => {
 
             <section>
               <div className="flex items-center justify-between mb-1.5 px-2">
-                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/20 italic">Substitutes</span>
+                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white/60 italic">Substitutes</span>
               </div>
               <div className="flex justify-around items-center p-2 bg-slate-900/40 rounded-2xl border border-white/5">
                 {squad.filter(s => !s.isStarter).sort((a,b) => {
@@ -886,7 +886,7 @@ const App: React.FC = () => {
             <div className="bg-slate-900/60 p-5 rounded-3xl border border-white/5 flex flex-col gap-4">
               <div className="flex items-center gap-4">
                 <div className="bg-purple-500/10 p-3 rounded-xl border border-purple-500/20"><BrainCircuit size={24} className="text-purple-400" /></div>
-                <div><h2 className="text-sm font-black uppercase italic">AI Scout</h2><p className="text-[8px] text-white/30 font-black uppercase tracking-[0.2em] mt-0.5">Transfer Optimization</p></div>
+                <div><h2 className="text-sm font-black uppercase italic">AI Scout</h2><p className="text-[8px] text-white/60font-black uppercase tracking-[0.2em] mt-0.5">Transfer Optimization</p></div>
               </div>
               
               <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5">
@@ -901,14 +901,14 @@ const App: React.FC = () => {
                     <button 
                       key={num} 
                       onClick={() => setScoutMode(num)}
-                      className={`flex-1 min-w-[30px] py-2 rounded-lg font-black text-[10px] uppercase transition-all ${scoutMode === num ? 'bg-purple-500 text-slate-900' : 'bg-white/5 text-white/30 hover:bg-white/10'}`}
+                      className={`flex-1 min-w-[30px] py-2 rounded-lg font-black text-[10px] uppercase transition-all ${scoutMode === num ? 'bg-purple-500 text-slate-900' : 'bg-white/5 text-white/60hover:bg-white/10'}`}
                     >
                       {num}
                     </button>
                   ))}
                    <button 
                       onClick={() => setScoutMode('wildcard')}
-                      className={`px-3 py-2 rounded-lg font-black text-[10px] uppercase transition-all flex items-center gap-1 ${scoutMode === 'wildcard' ? 'bg-yellow-500 text-slate-900' : 'bg-white/5 text-white/30 hover:bg-white/10'}`}
+                      className={`px-3 py-2 rounded-lg font-black text-[10px] uppercase transition-all flex items-center gap-1 ${scoutMode === 'wildcard' ? 'bg-yellow-500 text-slate-900' : 'bg-white/5 text-white/60hover:bg-white/10'}`}
                     >
                       <Wand2 size={10} /> WC
                     </button>
@@ -968,7 +968,7 @@ const App: React.FC = () => {
                   
                   {activeResult.isWildcard ? (
                     <div className="p-4 grid grid-cols-2 gap-2">
-                       <div className="col-span-2 text-center text-[10px] font-black uppercase text-white/30 tracking-widest mb-2">New Squad Composition</div>
+                       <div className="col-span-2 text-center text-[10px] font-black uppercase text-white/60tracking-widest mb-2">New Squad Composition</div>
                        {activeResult.in.sort((a,b) => b.now_cost - a.now_cost).map((p, i) => (
                          <div key={i} className="flex justify-between items-center bg-white/5 rounded px-2 py-1">
                             <div className="flex items-center gap-2 overflow-hidden">
@@ -1052,11 +1052,11 @@ const App: React.FC = () => {
              <div className="bg-slate-900/60 p-5 rounded-3xl border border-white/5 flex flex-col gap-4 animate-in slide-in-from-bottom duration-500">
                 <div className="flex items-center gap-4">
                    <div className="bg-orange-500/10 p-3 rounded-xl border border-orange-500/20"><BarChart3 size={24} className="text-orange-400" /></div>
-                   <div><h2 className="text-sm font-black uppercase italic">Rank Analytics</h2><p className="text-[8px] text-white/30 font-black uppercase tracking-[0.2em] mt-0.5">Ownership vs Risk</p></div>
+                   <div><h2 className="text-sm font-black uppercase italic">Rank Analytics</h2><p className="text-[8px] text-white/60font-black uppercase tracking-[0.2em] mt-0.5">Ownership vs Risk</p></div>
                 </div>
 
                 <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 flex gap-3">
-                   <Info size={16} className="text-white/30 shrink-0 mt-0.5" />
+                   <Info size={16} className="text-white/60shrink-0 mt-0.5" />
                    <p className="text-[9px] text-white/50 leading-relaxed font-medium">
                      <span className="text-green-400 font-bold">High Influence</span> players are your differentials. If they score, you gain ground on the pack. <br/>
                      <span className="text-red-400 font-bold">High Threat</span> players are popular assets you don't own. If they score, your rank drops.
@@ -1222,7 +1222,7 @@ const App: React.FC = () => {
                   }
                 }}
               />
-              <span className="text-white/30 font-black text-sm uppercase">M</span>
+              <span className="text-white/60font-black text-sm uppercase">M</span>
             </div>
             <div className="flex gap-2">
               <button onClick={() => setIsBankModalOpen(false)} className="flex-1 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-black uppercase text-white/50 transition-colors">Cancel</button>

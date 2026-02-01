@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Player, ElementType } from '../types';
-import { User, Plus, AlertCircle, ShieldBan } from 'lucide-react';
+import { User, Plus, ShieldBan } from 'lucide-react';
 import { POSITION_LABELS } from '../constants';
 
 interface PlayerSlotProps {
@@ -40,7 +39,7 @@ const PlayerSlot: React.FC<PlayerSlotProps> = ({
         isBench ? 'w-14' : 'w-16 sm:w-20'
       } ${isSelected ? 'scale-105' : 'active:scale-95'}`}
     >
-      {/* Bench Position Badge - Centered & Conditional on Player Existence */}
+      {/* Bench Position Badge */}
       {isBench && player && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 bg-slate-900 text-white text-[7px] font-black px-1.5 py-0.5 rounded border border-white/20 uppercase tracking-widest shadow-lg whitespace-nowrap">
            {POSITION_LABELS[type]}
@@ -52,16 +51,18 @@ const PlayerSlot: React.FC<PlayerSlotProps> = ({
       } ${
         player 
           ? 'bg-slate-100 shadow-xl border ' + (isSelected ? 'border-yellow-400 ring-2 ring-yellow-400/30' : 'border-green-600')
-          : 'bg-black/30 border border-dashed border-white/10'
+          /* UPDATED: High Contrast White for empty slots */
+          : 'bg-white/20 border-2 border-dashed border-white/80 backdrop-blur-sm'
       }`}>
         {player ? (
           <User className={isSelected ? "text-yellow-600" : "text-green-800"} size={isBench ? 14 : 18} />
         ) : (
-          <Plus className="text-white/10" size={isBench ? 12 : 14} />
+          /* UPDATED: Pure white Icon */
+          <Plus className="text-white" size={isBench ? 12 : 14} strokeWidth={3} />
         )}
         
         {player && (
-          <div className="absolute -bottom-1 -right-1 bg-green-600 text-[6px] font-black px-0.5 rounded border border-white shadow-sm z-10">
+          <div className="absolute -bottom-1 -right-1 bg-green-600 text-white text-[6px] font-black px-0.5 rounded border border-white shadow-sm z-10">
             {(player.now_cost / 10).toFixed(1)}
           </div>
         )}
@@ -108,7 +109,8 @@ const PlayerSlot: React.FC<PlayerSlotProps> = ({
           <div className={`text-[8px] font-black truncate px-1 py-0.5 w-full text-center uppercase tracking-tighter ${
             player 
               ? isSelected ? 'text-slate-900' : 'text-white' 
-              : 'text-white/20 border border-dashed border-white/5 rounded-md px-1 py-0.5'
+              /* UPDATED: High Contrast White text and border for empty labels */
+              : 'text-white border border-dashed border-white/60 rounded-md px-1 py-0.5 bg-white/10'
           }`}>
             {player ? player.web_name : label || 'Add'}
           </div>

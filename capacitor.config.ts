@@ -4,15 +4,17 @@ const config: CapacitorConfig = {
   appId: 'com.egemalm.architect',
   appName: 'Allsvenskan Architect',
   webDir: 'dist',
-  // 1. Set the background of the native webview to match your app's theme
   backgroundColor: '#020617', 
+  // ADD THIS BLOCK:
+ /* server: {
+  url: 'http://192.168.86.41:3000',
+  cleartext: true
+}, 
+*/
   plugins: {
     SplashScreen: {
-      // 2. Stop the splash from hiding automatically
       launchAutoHide: false, 
-      // 3. Match the splash background to the webview background
       backgroundColor: '#020617',
-      // Optional: Add a spinner to show it's loading
       showSpinner: true,
       androidScaleType: 'CENTER_CROP',
       iosSpinnerStyle: 'small',
