@@ -1016,7 +1016,7 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 !isScouting && (
-                  <div className="py-20 text-center flex flex-col items-center opacity-20">
+                  <div className="py-20 text-center flex flex-col items-center opacity-40">
                     <Sliders size={40} className="mb-4" />
                     <p className="text-[10px] font-black uppercase">Ready to Optimize</p>
                   </div>

@@ -39,7 +39,7 @@ const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose
         <div className="p-6 border-b border-white/5 shrink-0">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 mb-1">{team?.name || 'Unknown Team'}</div>
+              <div className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-1">{team?.name || 'Unknown Team'}</div>
               <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none">
                 {player.first_name} <span className="text-green-500">{player.second_name}</span>
               </h2>
@@ -55,7 +55,7 @@ const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose
               <div className="text-sm font-black text-green-400">{(player.now_cost / 10).toFixed(1)}M</div>
             </div>
             <div className="bg-white/5 px-3 py-1.5 rounded-xl">
-              <div className="text-[8px] font-black uppercase text-white/20 mb-0.5">Ownership</div>
+              <div className="text-[8px] font-black uppercase text-white/40 mb-0.5">Ownership</div>
               <div className="text-sm font-black">{player.selected_by_percent}%</div>
             </div>
           </div>
@@ -66,7 +66,7 @@ const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose
               <div>
                 <div className="text-[10px] font-black text-orange-500 uppercase">Availability Alert</div>
                 <div className="text-xs text-white/70 font-medium mt-0.5">{player.news}</div>
-                <div className="text-[10px] text-white/30 font-bold uppercase mt-1">Chance of playing: {player.chance_of_playing_next_round ?? 0}%</div>
+                <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Chance of playing: {player.chance_of_playing_next_round ?? 0}%</div>
               </div>
             </div>
           )}
@@ -80,7 +80,7 @@ const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose
               <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40">Fantasy Performance</h3>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <StatItem label="Predicted Points" value={player.ep_next} subValue="EP" highlight />
+              <StatItem label="Excpected Points" value={player.ep_next} subValue="EP" highlight />
               <StatItem label="Form Index" value={player.form} />
               <StatItem label="Points Per Match" value={player.points_per_game} />
               <StatItem label="Total Points" value={player.total_points} />
@@ -95,19 +95,19 @@ const PlayerInfoModal: React.FC<PlayerInfoModalProps> = ({ player, team, onClose
             <div className="bg-slate-800/20 rounded-2xl p-4 border border-white/5 space-y-4">
               <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <div className="flex justify-between items-end border-b border-white/5 pb-2">
-                  <span className="text-[9px] font-bold text-white/20 uppercase">Minutes Played</span>
+                  <span className="text-[9px] font-bold text-white/40 uppercase">Minutes Played</span>
                   <span className="text-xs font-black">{player.minutes}</span>
                 </div>
                 <div className="flex justify-between items-end border-b border-white/5 pb-2">
-                  <span className="text-[9px] font-bold text-white/20 uppercase">Key Passes</span>
+                  <span className="text-[9px] font-bold text-white/40 uppercase">Key Passes</span>
                   <span className="text-xs font-black text-blue-400">{player.key_passes}</span>
                 </div>
                 <div className="flex justify-between items-end border-b border-white/5 pb-2">
-                  <span className="text-[9px] font-bold text-white/20 uppercase">CBI Rating</span>
+                  <span className="text-[9px] font-bold text-white/40 uppercase">CBI Rating</span>
                   <span className="text-xs font-black text-purple-400">{player.clearances_blocks_interceptions}</span>
                 </div>
                 <div className="flex justify-between items-end border-b border-white/5 pb-2">
-                  <span className="text-[9px] font-bold text-white/20 uppercase">Goals + Assists</span>
+                  <span className="text-[9px] font-bold text-white/40 uppercase">Goals + Assists</span>
                   <span className="text-xs font-black">{player.goals_scored + player.assists}</span>
                 </div>
               </div>
