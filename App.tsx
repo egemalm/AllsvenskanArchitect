@@ -848,8 +848,15 @@ const App: React.FC = () => {
               </div>
               <div className="flex justify-around items-center p-2 bg-slate-900/40 rounded-2xl border border-white/5">
                 {squad.filter(s => !s.isStarter).sort((a,b) => {
-                  const order = { [ElementType.GK]: 1, [ElementType.DEF]: 2, [ElementType.MID]: 3, [ElementType.FWD]: 4 };
-                  return order[a.type] - order[b.type];
+                  // GK always first
+                  if (a.type === ElementType.GK) return -1;
+                  if (b.type === ElementType.GK) return 1;
+                  
+                  // Sort others by EP (Highest first)
+                  const epA = a.player ? parseFloat(a.player.ep_next) : -Infinity;
+                  const epB = b.player ? parseFloat(b.player.ep_next) : -Infinity;
+                  
+                  return epB - epA;
                 }).map(s => (
                   <PlayerSlot 
                     key={s.id} 

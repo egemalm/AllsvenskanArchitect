@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Player, Team, ElementType } from '../types';
-import { Search, X, TrendingUp, Info, AlertTriangle, Coins } from 'lucide-react';
+import { Search, X, TrendingUp, Info, AlertTriangle, Coins, Activity, Trophy, Users, Shield, Percent, ArrowUpDown } from 'lucide-react';
 import PlayerInfoModal from './PlayerInfoModal';
 
 interface TransferModalProps {
@@ -17,6 +17,8 @@ interface TransferModalProps {
   existingPlayerIds: Set<number>;
 }
 
+type SortOption = 'ep' | 'price' | 'form' | 'total_points' | 'ppg' | 'ownership' | 'team';
+
 const TransferModal: React.FC<TransferModalProps> = ({
   isOpen,
   onClose,
@@ -31,6 +33,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingPlayerId, setViewingPlayerId] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('ep');
 
   const potentialBudget = (currentSlotPlayer?.now_cost || 0) + bank;
   const isBudgetNegative = potentialBudget < 0;
@@ -38,8 +41,6 @@ const TransferModal: React.FC<TransferModalProps> = ({
   const suggestions = useMemo(() => {
     if (!isOpen) return [];
 
-    // Note: We deliberately removed the maxBudget filter to allow overspending
-    
     return players
       .filter(p => {
         if (p.element_type !== slotType) return false;
@@ -55,10 +56,65 @@ const TransferModal: React.FC<TransferModalProps> = ({
         
         return true;
       })
-      .sort((a, b) => parseFloat(b.ep_next) - parseFloat(a.ep_next));
-  }, [players, currentSlotPlayer, slotType, squadTeamCounts, existingPlayerIds, searchTerm, isOpen]);
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'price': return b.now_cost - a.now_cost;
+          case 'form': return parseFloat(b.form) - parseFloat(a.form);
+          case 'total_points': return b.total_points - a.total_points;
+          case 'ppg': return parseFloat(b.points_per_game) - parseFloat(a.points_per_game);
+          case 'ownership': return parseFloat(b.selected_by_percent) - parseFloat(a.selected_by_percent);
+          case 'team': {
+            const teamA = teams.find(t => t.id === a.team)?.short_name || '';
+            const teamB = teams.find(t => t.id === b.team)?.short_name || '';
+            return teamA.localeCompare(teamB);
+          }
+          case 'ep':
+          default: return parseFloat(b.ep_next) - parseFloat(a.ep_next);
+        }
+      });
+  }, [players, currentSlotPlayer, slotType, squadTeamCounts, existingPlayerIds, searchTerm, isOpen, sortBy, teams]);
 
   const viewingPlayer = players.find(p => p.id === viewingPlayerId) || null;
+
+  const getSortIcon = (option: SortOption) => {
+    switch (option) {
+      case 'ep': return <TrendingUp size={12} />;
+      case 'price': return <Coins size={12} />;
+      case 'form': return <Activity size={12} />;
+      case 'total_points': return <Trophy size={12} />;
+      case 'ppg': return <Percent size={12} />;
+      case 'ownership': return <Users size={12} />;
+      case 'team': return <Shield size={12} />;
+      default: return <ArrowUpDown size={12} />;
+    }
+  };
+
+  const getSortLabel = (option: SortOption) => {
+    switch (option) {
+      case 'ep': return 'Prediction';
+      case 'price': return 'Price';
+      case 'form': return 'Form';
+      case 'total_points': return 'Points';
+      case 'ppg': return 'PPG';
+      case 'ownership': return 'Owned %';
+      case 'team': return 'Team';
+    }
+  };
+
+  const renderStatValue = (p: Player) => {
+    switch (sortBy) {
+      case 'price': return <span>{(p.now_cost / 10).toFixed(1)}m</span>;
+      case 'form': return <span>{p.form}</span>;
+      case 'total_points': return <span>{p.total_points}</span>;
+      case 'ppg': return <span>{p.points_per_game}</span>;
+      case 'ownership': return <span>{p.selected_by_percent}%</span>;
+      case 'team': return <span className="text-xs">{teams.find(t => t.id === p.team)?.short_name}</span>;
+      case 'ep':
+      default: return <span>{p.ep_next}</span>;
+    }
+  };
+
+  const sortOptions: SortOption[] = ['ep', 'price', 'form', 'total_points', 'ppg', 'ownership', 'team'];
 
   if (!isOpen) return null;
 
@@ -83,7 +139,7 @@ const TransferModal: React.FC<TransferModalProps> = ({
           </button>
         </div>
 
-        <div className="px-6 py-4 shrink-0">
+        <div className="px-6 py-4 shrink-0 space-y-4">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-green-500 transition-colors" size={20} />
             <input
@@ -94,6 +150,23 @@ const TransferModal: React.FC<TransferModalProps> = ({
               onChange={(e) => setSearchTerm(e.target.value)}
               autoFocus
             />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+             {sortOptions.map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => setSortBy(opt)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                    sortBy === opt 
+                      ? 'bg-blue-500 text-slate-950 shadow-[0_0_10px_rgba(59,130,246,0.5)]' 
+                      : 'bg-white/5 text-white/40 hover:bg-white/10'
+                  }`}
+                >
+                  {getSortIcon(opt)}
+                  {getSortLabel(opt)}
+                </button>
+             ))}
           </div>
         </div>
 
@@ -116,7 +189,18 @@ const TransferModal: React.FC<TransferModalProps> = ({
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center border border-white/10 group-hover:border-green-500/50 transition-colors">
-                      <TrendingUp size={16} className={epGain >= 0 ? 'text-green-500' : 'text-red-400'} />
+                       {/* Contextual Icon based on Sort */}
+                       {sortBy === 'ep' ? (
+                          <TrendingUp size={16} className={epGain >= 0 ? 'text-green-500' : 'text-red-400'} />
+                       ) : sortBy === 'price' ? (
+                          <Coins size={16} className="text-yellow-500" />
+                       ) : sortBy === 'form' ? (
+                          <Activity size={16} className="text-blue-400" />
+                       ) : sortBy === 'ownership' ? (
+                          <Users size={16} className="text-purple-400" />
+                       ) : (
+                          <TrendingUp size={16} className="text-white/40" />
+                       )}
                     </div>
                     <div>
                       <div className="font-black text-white text-sm leading-tight uppercase italic">{p.web_name}</div>
@@ -129,9 +213,9 @@ const TransferModal: React.FC<TransferModalProps> = ({
                   
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <div className="text-[7px] text-white/20 uppercase font-black tracking-widest mb-0.5">Prediction</div>
+                      <div className="text-[7px] text-white/20 uppercase font-black tracking-widest mb-0.5">{getSortLabel(sortBy)}</div>
                       <div className="text-lg font-black text-white">
-                        {p.ep_next}
+                        {renderStatValue(p)}
                       </div>
                     </div>
                     
