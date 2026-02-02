@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { Player, Team, ElementType } from '../types';
+import { Player, Team, ElementType } from '../../types';
 import { Search, X, TrendingUp, Info, AlertTriangle, Coins, Activity, Trophy, Users, Shield, Percent, ArrowUpDown } from 'lucide-react';
 import PlayerInfoModal from './PlayerInfoModal';
 

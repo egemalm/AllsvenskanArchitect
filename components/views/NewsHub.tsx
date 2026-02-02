@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NewsItem } from '../types';
+import { NewsItem } from '../../types';
 import { Globe, ChevronRight, ExternalLink, RefreshCw } from 'lucide-react';
 
 interface NewsHubProps {

@@ -90,3 +90,16 @@ export interface NewsItem {
   source: string;
   guid: string;
 }
+
+// --- Moved from App.tsx ---
+export type Tab = 'squad' | 'ai-transfers' | 'stats' | 'analytics' | 'news';
+export type ScoutMode = number | 'wildcard'; // 1-5 or 'wildcard'
+
+export interface TransferPack {
+  out: SquadSlot[];
+  in: Player[];
+  gain: number;
+  costDiff: number;
+  isWildcard?: boolean;
+  transferCount: number;
+}

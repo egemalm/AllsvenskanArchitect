@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Player, Team } from '../types';
+import { Player, Team } from '../../types';
 import { X, TrendingUp, Zap, Shield, AlertCircle, Activity, ArrowRight, Trash2, Crown, Star } from 'lucide-react';
 
 interface PlayerInfoModalProps {

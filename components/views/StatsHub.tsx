@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Team, Fixture } from '../types';
+import { Team, Fixture } from '../../types';
 import { Table, CalendarDays, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
-import { FDR_COLORS } from '../constants';
+import { FDR_COLORS } from '../../constants';
 
 interface StatsHubProps {
   teams: Team[];
@@ -128,7 +128,7 @@ const StatsHub: React.FC<StatsHubProps> = ({ teams, fixtures, loading }) => {
                {/* Table Card Container */}
                <div className="mx-2 mt-2 bg-slate-900/20 rounded-2xl border border-white/5 isolate">
                  {/* Sticky Header */}
-                 <div className="sticky top-0 z-20 grid grid-cols-[10%_1fr_10%_10%_10%_10%_10%] bg-slate-900 border-b border-white/5 py-3 px-3 rounded-t-2xl shadow-lg">
+                 <div className="sticky top-0 z-20 grid grid-cols-[10%_1fr_10%_10%_10%_10%_10%_10%] bg-slate-900 border-b border-white/5 py-3 px-3 rounded-t-2xl shadow-lg">
                     <div className="text-[8px] font-black text-white/30 uppercase text-center">Pos</div>
                     <div className="text-[8px] font-black text-white/30 uppercase">Team</div>
                     <div className="text-[8px] font-black text-white/30 uppercase text-center">P</div>
@@ -147,7 +147,7 @@ const StatsHub: React.FC<StatsHubProps> = ({ teams, fixtures, loading }) => {
                     return (
                       <div 
                         key={team.id}
-                        className={`grid grid-cols-[10%_1fr_10%_10%_10%_10%_10%] py-3 px-3 items-center border-b border-white/5 hover:bg-white/5 transition-colors ${
+                        className={`grid grid-cols-[10%_1fr_10%_10%_10%_10%_10%_10%] py-3 px-3 items-center border-b border-white/5 hover:bg-white/5 transition-colors ${
                           isEuro ? 'bg-green-500/5' : isRelegation ? 'bg-red-500/5' : ''
                         }`}
                       >

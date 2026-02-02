@@ -1,3 +1,4 @@
+
 # Fantasy Allsvenskan Architect 🏗️
 
 ![Version](https://img.shields.io/badge/version-3.0.0-green)
@@ -54,40 +55,19 @@ To ensure the app works even when the official API has strict CORS policies or m
 
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-*   Node.js v18+
-*   npm or yarn
-
-### Installation
-
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/yourusername/fantasy-allsvenskan-architect.git
-    ```
-
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-
-3.  Run the development server:
-    ```bash
-    npm start
-    ```
-
----
-
 ## 📂 Project Structure
 
 ```
 /
-├── components/          # UI Components
-│   ├── PlayerSlot.tsx   # Individual pitch/bench player card
-│   ├── StatsHub.tsx     # League tables and fixture lists
-│   ├── TransferModal.tsx# Search and selection interface
-│   └── ...
+├── components/          
+│   ├── layout/          # AppHeader, AppFooter
+│   ├── views/           # SquadView, AiScoutView, StatsHub...
+│   ├── modals/          # TransferModal, PlayerInfoModal...
+│   └── shared/          # Reusable UI (PlayerSlot)
+├── hooks/
+│   ├── useFantasyData.ts
+│   ├── useSquadManager.ts
+│   └── useScoutEngine.ts
 ├── services/
 │   └── api.ts           # The Proxy Swarm and Data Fetching logic
 ├── types.ts             # TypeScript interfaces for API responses
@@ -95,6 +75,24 @@ To ensure the app works even when the official API has strict CORS policies or m
 ├── App.tsx              # Main Controller & State Machine
 └── index.tsx            # Entry point
 ```
+
+---
+
+## 🏗️ Architecture
+
+The application implements a **Domain-Driven Design** approach using React Hooks to separate concerns:
+
+1.  **`useFantasyData` (Data Layer)**
+    *   **Responsibility**: Centralized data fetching, caching, and synchronization.
+    *   **Features**: Manages the Proxy Swarm, handles "Live" vs "Cached" states, and prunes raw API responses to minimize memory footprint.
+
+2.  **`useSquadManager` (Game State)**
+    *   **Responsibility**: Manages the user's specific context.
+    *   **Features**: Handles squad slots, bank balance, captaincy logic, and chip usage. Enforces game rules (valid formations, team limits) and persists state to `localStorage`.
+
+3.  **`useScoutEngine` (The Brain)**
+    *   **Responsibility**: Pure mathematical optimization.
+    *   **Features**: An isolated combinatorial engine that takes "ReadOnly" data and the current "Squad State" to calculate optimal moves. Runs asynchronously to prevent blocking the UI thread.
 
 ---
 

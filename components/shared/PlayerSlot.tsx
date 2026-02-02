@@ -1,7 +1,8 @@
+
 import React from 'react';
-import { Player, ElementType } from '../types';
+import { Player, ElementType } from '../../types';
 import { User, Plus, ShieldBan } from 'lucide-react';
-import { POSITION_LABELS } from '../constants';
+import { POSITION_LABELS } from '../../constants';
 
 interface PlayerSlotProps {
   player: Player | null;
