@@ -1,120 +1,118 @@
+[![Production Build](https://github.com/egemalm/AllsvenskanArchitect/actions/workflows/ci.yml/badge.svg)](https://github.com/egemalm/AllsvenskanArchitect/actions/workflows/ci.yml)
+# Allsvenskan Architect 🏆
 
-# Fantasy Allsvenskan Architect 🏗️
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Capacitor](https://img.shields.io/badge/capacitor-%231199EE.svg?style=for-the-badge&logo=capacitor&logoColor=white)
 
-![Version](https://img.shields.io/badge/version-3.0.0-green)
-![Tech](https://img.shields.io/badge/react-19-blue)
-![Style](https://img.shields.io/badge/tailwind-3.4-purple)
-![License](https://img.shields.io/badge/license-MIT-gray)
+> **A high-performance fantasy football companion app featuring a custom combinatorial optimization engine for transfer strategy.**
 
-**Fantasy Allsvenskan Architect** is a high-performance, mobile-first companion app for the Swedish Fantasy Football league. Unlike standard fantasy apps, the Architect focuses on **atomic squad optimization**, **real-time data resilience**, and **rank-threat analytics**.
+## 📱 Project Overview
+Allsvenskan Architect is a mobile-first application built to give fantasy managers a mathematical edge. Unlike standard fantasy apps that just show stats, this application actively **solves** the problem of "who to buy" using a custom-built decision engine.
 
-It is built to run as a Progressive Web App (PWA) or wrapped in a native container, providing a "Cyber/Dark Mode" aesthetic optimized for OLED screens.
+It is built as a hybrid mobile application using **React** and **Capacitor**, providing a native iOS experience with a single codebase.
 
 ---
 
-## ⚡ Key Features
+## ✨ Key Features
 
-### 1. Visual Squad Builder
-*   **Interactive Pitch View**: A fully interactive 11-player pitch with a 4-player bench.
-*   **Dynamic Validation**: Real-time enforcement of formation rules (1 GK, 3-5 DEF, 2-5 MID, 1-3 FWD) and squad limits (max 3 players per team).
-*   **Budget Management**: Live bank calculation with granular budget editing capabilities.
+### 🧠 The "Scout Engine" (Combinatorial Optimization)
+The core differentiator of the app. A custom algorithm that analyzes thousands of possible transfer combinations to find the mathematically optimal move.
+* **Recursive Search:** Evaluates transfer chains up to 5 layers deep.
+* **Value Curve Analysis:** Visualizes the marginal gain of each additional transfer to help users decide if a "hit" (points deduction) is worth it.
+* **Wildcard Mode:** A greedy algorithm variant that rebuilds the entire squad from scratch within budget constraints.
 
-### 2. The "Scout" AI Engine 🧠
-The core differentiator of the Architect is its client-side optimization engine found in the `AI Scout` tab. It operates in two modes:
+### 📊 Rank Analytics
+* **Influence vs. Threat:** Instead of just showing ownership %, the app contextualizes data into "Influence" (players that will boost your rank if they score) vs "Threats" (highly owned players that hurt your rank if you don't own them).
 
-*   **Incremental Optimization (The Curve)**:
-    *   Uses a **Recursive Combinatorial Search** to analyze transfer depths from 1 to 5.
-    *   Calculates the "Marginal EP Gain" (Expected Points) for every additional transfer to determine if the point hit is worth the potential return.
-    *   **Pruning**: Implements intelligent pruning (only analyzing the bottom 5 performers for deep searches) to keep the UI responsive on mobile devices.
-    
-*   **Wildcard Mode**:
-    *   Uses a **Greedy Algorithm** to build the highest EP squad from scratch.
-    *   Automatically performs budget balancing by iteratively swapping the lowest value-per-cost asset until the squad fits within the financial cap.
+### ⚡ Performance & UX
+* **Optimized Threading:** The heavy math logic utilizes asynchronous yielding to ensure the UI remains responsive (60fps) even during complex recursive calculations.
+* **Offline First:** Caches bootstrap data to allow roster tinkering even with poor network connectivity.
+* **Live Sync:** Real-time integration with the official Allsvenskan Fantasy API.
 
-### 3. Data Resilience (The Proxy Swarm) 🐝
-To ensure the app works even when the official API has strict CORS policies or minor outages, the data layer implements a **Proxy Swarm**:
-*   The app races multiple proxy services (`allorigins`, `corsproxy`, `codetabs`, etc.) simultaneously.
-*   It implements a "Fail-Fast" mechanism with a 4.5s timeout.
-*   **Atomic Pruning**: Raw API data is stripped of unused fields immediately upon receipt to minimize memory footprint.
-*   **Offline Caching**: If all networks fail, the app gracefully degrades to the last known state stored in `localStorage`.
+---
 
-### 4. Advanced Analytics
-*   **Influence**: Identifies your "Differentials" (High EP players in your squad with low overall ownership).
-*   **Rank Threats**: Identifies "Dangerous" players (High EP players *not* in your squad with high ownership).
-*   **Stats Hub**: A live league table and color-coded Fixture Difficulty Rating (FDR) view.
+## 🏗️ Architecture & Engineering
+
+This project moves beyond standard "tutorial code" by implementing a strict **Separation of Concerns** using a custom hooks architecture.
+
+### The "Composer" Pattern
+The application logic is decoupled into three distinct domains, wired together in the root `App.tsx`:
+
+1.  **`useFantasyData` (Data Layer)**
+    * Responsible for fetching, normalizing, and caching external API data.
+    * Handles loading states and error boundaries.
+
+2.  **`useSquadManager` (State Layer)**
+    * Manages the user's local state (Squad, Bank, Captaincy).
+    * Exposes atomic actions (`handlePlayerAction`, `executeTransfer`) to the UI.
+    * Enforces game rules (e.g., max 3 players per team, valid formations) to prevent invalid states.
+
+3.  **`useScoutEngine` (Computation Layer)**
+    * Pure logic component.
+    * Accepts a read-only snapshot of the squad and market data.
+    * Returns optimization results without ever mutating the app state directly.
+
+---
+
+## 📸 Screenshots
+
+<table style="width: 100%;">
+  <tr>
+    <td align="center" width="33%"><b>Squad Management</b></td>
+    <td align="center" width="33%"><b>AI Scout Engine</b></td>
+    <td align="center" width="33%"><b>Rank Analytics</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/39a215b1-3bcc-4577-a478-cf5af15bf639" width="100%" /></td>
+    <td><img src="https://github.com/user-attachments/assets/ecb99f0b-bcb5-4757-8ce2-a8a570f5500b" width="100%" /></td>
+    <td><img src="https://github.com/user-attachments/assets/cfddcbfa-d332-4f92-8c3d-1e31a00f6965" width="100%" /></td>
+  </tr>
+  <tr>
+    <td align="center"><i>Interactive Pitch View</i></td>
+    <td align="center"><i>Transfer Optimization</i></td>
+    <td align="center"><i>Risk Assessment</i></td>
+  </tr>
+</table>
 
 ---
 
 ## 🛠️ Tech Stack
 
-*   **Core**: React 19 (Hooks, Context, Memoization)
-*   **Language**: TypeScript (Strict typing for API interfaces)
-*   **Styling**: Tailwind CSS (Utility-first, responsive design)
-*   **Icons**: Lucide React
-*   **State**: Local State + LocalStorage Persistence (No Redux/Zustand required due to atomic architecture)
+* **Frontend:** React 18, TypeScript, Vite
+* **Styling:** Tailwind CSS, Lucide React (Icons)
+* **Mobile:** Capacitor (iOS Build Target)
+* **State Management:** React Hooks (Custom Architecture)
+* **Data Persistence:** LocalStorage & API Caching
+
+## 🚀 Getting Started
+
+1.  **Clone the repo**
+    ```bash
+    git clone [https://github.com/yourusername/allsvenskan-architect.git](https://github.com/yourusername/allsvenskan-architect.git)
+    ```
+
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
+
+3.  **Run Development Server**
+    ```bash
+    npm run dev
+    ```
+
+4.  **Build for iOS (Requires Xcode)**
+    ```bash
+    npm run build
+    npx cap sync
+    npx cap open ios
+    ```
 
 ---
 
-## 📂 Project Structure
-
-```
-/
-├── components/          
-│   ├── layout/          # AppHeader, AppFooter
-│   ├── views/           # SquadView, AiScoutView, StatsHub...
-│   ├── modals/          # TransferModal, PlayerInfoModal...
-│   └── shared/          # Reusable UI (PlayerSlot)
-├── hooks/
-│   ├── useFantasyData.ts
-│   ├── useSquadManager.ts
-│   └── useScoutEngine.ts
-├── services/
-│   └── api.ts           # The Proxy Swarm and Data Fetching logic
-├── types.ts             # TypeScript interfaces for API responses
-├── constants.ts         # Configuration (Formation rules, defaults)
-├── App.tsx              # Main Controller & State Machine
-└── index.tsx            # Entry point
-```
-
----
-
-## 🏗️ Architecture
-
-The application implements a **Domain-Driven Design** approach using React Hooks to separate concerns:
-
-1.  **`useFantasyData` (Data Layer)**
-    *   **Responsibility**: Centralized data fetching, caching, and synchronization.
-    *   **Features**: Manages the Proxy Swarm, handles "Live" vs "Cached" states, and prunes raw API responses to minimize memory footprint.
-
-2.  **`useSquadManager` (Game State)**
-    *   **Responsibility**: Manages the user's specific context.
-    *   **Features**: Handles squad slots, bank balance, captaincy logic, and chip usage. Enforces game rules (valid formations, team limits) and persists state to `localStorage`.
-
-3.  **`useScoutEngine` (The Brain)**
-    *   **Responsibility**: Pure mathematical optimization.
-    *   **Features**: An isolated combinatorial engine that takes "ReadOnly" data and the current "Squad State" to calculate optimal moves. Runs asynchronously to prevent blocking the UI thread.
-
----
-
-## 🧠 Algorithmic Detail
-
-### The Optimization Loop
-The `runScout` function in `App.tsx` performs the following logic:
-
-1.  **Identify Weaknesses**: Sorts current squad by `ep_next` (Expected Points).
-2.  **Generate Combinations**: Creates sets of players to remove (Size $k=1$ to $5$).
-3.  **Knapsack-style Fill**: For every removed set, it attempts to fill the empty slots with the highest EP players available in the market that:
-    *   Fit the budget.
-    *   Fit the formation rules.
-    *   Do not violate team constraints.
-4.  **Result**: Returns a "Transfer Pack" suggesting the exact moves to make.
-
----
-
-## ⚠️ Disclaimer
-
-This project is a third-party tool and is not affiliated with, endorsed by, or connected to Allsvenskan or the official Fantasy Allsvenskan game. Data is retrieved from public endpoints for personal analysis.
-
----
-
-Developed with 💚 for the love of the game.
+## 🔮 Future Roadmap
+* **Web Workers:** Moving the `useScoutEngine` logic to a dedicated Web Worker to further unblock the main thread on older devices.
+* **Unit Testing:** Implementing Jest/Vitest for the optimization logic.
+* **Advanced Metrics:** Integrating xG (Expected Goals) data overlay.
