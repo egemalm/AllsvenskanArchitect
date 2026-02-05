@@ -5,7 +5,7 @@ Welcome to the support page for **Allsvenskan Architect**. We are here to help y
 ### Need Help?
 If you have questions, feedback, or need to report a bug, please reach out to us:
 
-* **Email:** [isidor@egemalm.com]
+* **Email:** isidor@egemalm.com
 * **Issues:** If you have a GitHub account, you can also [open an issue here](https://github.com/egemalm/AllsvenskanArchitect/issues).
 
 ### Privacy & FAQ
