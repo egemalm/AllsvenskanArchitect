@@ -5,6 +5,7 @@
 ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Capacitor](https://img.shields.io/badge/capacitor-%231199EE.svg?style=for-the-badge&logo=capacitor&logoColor=white)
+[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/allsvenskan-architect/id6758556561)
 
 > **A high-performance fantasy football companion app featuring a custom combinatorial optimization engine for transfer strategy.**
 
